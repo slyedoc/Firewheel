@@ -454,16 +454,18 @@ mod reflect {
             bevy_reflect::structs::FieldIter::new(self)
         }
 
-        fn to_dynamic_struct(&self) -> bevy_reflect::structs::DynamicStruct {
+        fn to_dynamic_struct(
+            &self,
+        ) -> Result<bevy_reflect::structs::DynamicStruct, bevy_reflect::ReflectCloneError> {
             let mut dynamic: bevy_reflect::structs::DynamicStruct = Default::default();
             dynamic.set_represented_type(bevy_reflect::PartialReflect::get_represented_type_info(
                 self,
             ));
             dynamic.insert_boxed(
                 "value",
-                bevy_reflect::PartialReflect::to_dynamic(&self.value),
+                bevy_reflect::PartialReflect::to_dynamic(&self.value)?,
             );
-            dynamic
+            Ok(dynamic)
         }
 
         fn index_of_name(&self, name: &str) -> Option<usize> {
