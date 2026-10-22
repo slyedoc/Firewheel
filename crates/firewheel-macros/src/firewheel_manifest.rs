@@ -32,6 +32,9 @@ impl Default for FirewheelManifest {
     }
 }
 const FIREWHEEL: &str = "firewheel";
+/// bevy_seedling re-exports Firewheel (`bevy_seedling::firewheel`), so its users need not depend
+/// on Firewheel themselves to derive `Diff` and `Patch`.
+const SEEDLING: &str = "bevy_seedling";
 
 impl FirewheelManifest {
     /// Attempt to retrieve the [path](syn::Path) of a particular package in
@@ -46,15 +49,18 @@ impl FirewheelManifest {
         }
 
         let find_in_deps = |deps: &Item| -> Option<syn::Path> {
-            let package = if let Some(dep) = deps.get(name) {
+            let mut path = if let Some(dep) = deps.get(name) {
                 return Some(Self::parse_str(dep_package(dep).unwrap_or(name)));
             } else if let Some(dep) = deps.get(FIREWHEEL) {
-                dep_package(dep).unwrap_or(FIREWHEEL)
+                Self::parse_str::<syn::Path>(dep_package(dep).unwrap_or(FIREWHEEL))
+            } else if let Some(dep) = deps.get(SEEDLING) {
+                let mut path = Self::parse_str::<syn::Path>(dep_package(dep).unwrap_or(SEEDLING));
+                path.segments.push(Self::parse_str(FIREWHEEL));
+                path
             } else {
                 return None;
             };
 
-            let mut path = Self::parse_str::<syn::Path>(package);
             if let Some(module) = name.strip_prefix("firewheel_") {
                 path.segments.push(Self::parse_str(module));
             }
